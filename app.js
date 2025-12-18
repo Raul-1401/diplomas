@@ -1,5 +1,6 @@
 // ===== DOM Elements =====
 const studentNameInput = document.getElementById('studentName');
+const levelSelect = document.getElementById('levelSelect');
 const downloadBtn = document.getElementById('downloadBtn');
 const resetBtn = document.getElementById('resetBtn');
 const nameOverlay = document.getElementById('nameOverlay');
@@ -11,6 +12,7 @@ const toast = document.getElementById('toast');
 
 // ===== State =====
 let currentName = '';
+let currentLevel = 'level3.png';
 let imageBase64 = null;
 
 // ===== Initialize =====
@@ -20,6 +22,7 @@ function init() {
 
     // Event listeners
     studentNameInput.addEventListener('input', handleNameInput);
+    levelSelect.addEventListener('change', handleLevelChange);
     downloadBtn.addEventListener('click', generatePDF);
     resetBtn.addEventListener('click', resetForm);
 
@@ -83,17 +86,29 @@ function adjustNameFontSize(name) {
     nameOverlay.style.fontSize = fontSize;
 }
 
+function handleLevelChange(e) {
+    currentLevel = e.target.value;
+    diplomaImage.src = currentLevel;
+
+    // Re-convert the new image to base64
+    convertImageToBase64();
+}
+
 function updateDownloadButton() {
     downloadBtn.disabled = !currentName;
 }
 
 function resetForm() {
     studentNameInput.value = '';
+    levelSelect.value = 'level3.png';
     currentName = '';
+    currentLevel = 'level3.png';
     charCount.textContent = '0';
     nameOverlay.textContent = 'Nombre del Alumno';
     nameOverlay.style.opacity = '0.5';
     nameOverlay.style.fontSize = 'clamp(1.8rem, 4vw, 3rem)';
+    diplomaImage.src = 'level3.png';
+    convertImageToBase64();
     updateDownloadButton();
 
     // Focus on name input
