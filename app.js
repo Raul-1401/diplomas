@@ -139,8 +139,8 @@ async function generatePDF() {
         // Draw the name text
         ctx.save();
 
-        // Calculate font size relative to image size
-        const baseFontSize = img.naturalWidth * 0.045;
+        // Calculate font size relative to image size (increased for better visibility)
+        const baseFontSize = img.naturalWidth * 0.07;
         const nameLength = currentName.length;
         let fontSize;
 
@@ -175,10 +175,10 @@ async function generatePDF() {
         ctx.shadowColor = 'transparent';
         ctx.shadowBlur = 0;
         const textWidth = ctx.measureText(currentName).width;
-        const underlineY = nameY + fontSize * 0.4;
+        const underlineY = nameY + fontSize * 0.35;
         ctx.beginPath();
         ctx.strokeStyle = '#2c5282';
-        ctx.lineWidth = 1;
+        ctx.lineWidth = 2;
         ctx.moveTo(nameX - textWidth / 2, underlineY);
         ctx.lineTo(nameX + textWidth / 2, underlineY);
         ctx.stroke();
@@ -201,15 +201,17 @@ async function generatePDF() {
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
 
-        // Calculate dimensions to fit the image
+        // Fill entire page with image (no margins)
         let finalWidth, finalHeight;
         const pageRatio = pdfWidth / pdfHeight;
 
         if (ratio > pageRatio) {
-            finalWidth = pdfWidth - 10;
+            // Image is wider - fit to width
+            finalWidth = pdfWidth;
             finalHeight = finalWidth / ratio;
         } else {
-            finalHeight = pdfHeight - 10;
+            // Image is taller - fit to height
+            finalHeight = pdfHeight;
             finalWidth = finalHeight * ratio;
         }
 
