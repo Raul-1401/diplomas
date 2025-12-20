@@ -45,13 +45,37 @@ function convertImageToBase64() {
     img.src = diplomaImage.src;
 }
 
+// ===== Helper Functions =====
+function toTitleCase(str) {
+    // Convierte a Title Case: primera letra de cada palabra en mayúscula, resto en minúsculas
+    return str
+        .toLowerCase()
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+}
+
 // ===== Event Handlers =====
 function handleNameInput(e) {
-    const name = e.target.value.trim();
+    const input = e.target;
+    const cursorPosition = input.selectionStart;
+    const originalValue = input.value;
+
+    // Aplicar formato Title Case
+    const formattedValue = toTitleCase(originalValue);
+
+    // Solo actualizar si cambió el valor (evita bucles)
+    if (formattedValue !== originalValue) {
+        input.value = formattedValue;
+        // Restaurar posición del cursor
+        input.setSelectionRange(cursorPosition, cursorPosition);
+    }
+
+    const name = formattedValue.trim();
     currentName = name;
 
     // Update character counter
-    charCount.textContent = e.target.value.length;
+    charCount.textContent = formattedValue.length;
 
     // Update preview
     if (name) {
