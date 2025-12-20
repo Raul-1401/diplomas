@@ -12,7 +12,7 @@ const toast = document.getElementById('toast');
 
 // ===== State =====
 let currentName = '';
-let currentLevel = 'level3.png';
+let currentLevel = '1.png';
 let imageBase64 = null;
 
 // ===== Initialize =====
@@ -100,14 +100,14 @@ function updateDownloadButton() {
 
 function resetForm() {
     studentNameInput.value = '';
-    levelSelect.value = 'level3.png';
+    levelSelect.value = '1.png';
     currentName = '';
-    currentLevel = 'level3.png';
+    currentLevel = '1.png';
     charCount.textContent = '0';
     nameOverlay.textContent = 'Nombre del Alumno';
     nameOverlay.style.opacity = '0.5';
     nameOverlay.style.fontSize = 'clamp(1.8rem, 4vw, 3rem)';
-    diplomaImage.src = 'level3.png';
+    diplomaImage.src = '1.png';
     convertImageToBase64();
     updateDownloadButton();
 
