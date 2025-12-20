@@ -8,33 +8,22 @@ const charCount = document.getElementById('charCount');
 const diplomaPreview = document.getElementById('diplomaPreview');
 const diplomaImage = document.getElementById('diplomaImage');
 const loadingOverlay = document.getElementById('loadingOverlay');
+const loadingText = document.getElementById('loadingText');
+const loadingProgress = document.getElementById('loadingProgress');
+const loadingProgressBar = document.getElementById('loadingProgressBar');
 const toast = document.getElementById('toast');
-
-// ===== State =====
-let currentName = '';
-let currentLevel = '1.png';
-let imageBase64 = null;
-
-// ===== Initialize =====
-function init() {
-    // Convert image to base64 for PDF generation (avoids CORS issues)
-    convertImageToBase64();
-
-    // Event listeners
-    studentNameInput.addEventListener('input', handleNameInput);
-    levelSelect.addEventListener('change', handleLevelChange);
-    downloadBtn.addEventListener('click', generatePDF);
-    resetBtn.addEventListener('click', resetForm);
-
-    // Initial button state
-    updateDownloadButton();
-}
 
 // ===== Configuration =====
 // Proporciones para el tamaño de fuente (relativos al ancho de la imagen)
-const FONT_SIZE_MAX_RATIO = 0.06;  // 6% del ancho
+const FONT_SIZE_MAX_RATIO = 0.055;  // 5.5% del ancho
 const FONT_SIZE_MIN_RATIO = 0.018; // 1.8% del ancho
 const AVAILABLE_WIDTH_RATIO = 0.68; // 68% del ancho para el nombre
+
+// Lista de imágenes a precargar
+const DIPLOMA_IMAGES = ['1.png', '2.png', '3.png'];
+
+// Cache de imágenes en base64
+const imageCache = {};
 
 // Configuración de optimización de imagen
 const IMAGE_OPTIMIZATION = {
@@ -44,36 +33,109 @@ const IMAGE_OPTIMIZATION = {
     format: 'image/jpeg' // Formato: 'image/jpeg' para menor tamaño, 'image/png' para calidad máxima
 };
 
-// ===== Convert image to base64 =====
-function convertImageToBase64() {
-    const img = new Image();
-    img.crossOrigin = 'Anonymous';
-    img.onload = function () {
-        const canvas = document.createElement('canvas');
+// ===== State =====
+let currentName = '';
+let currentLevel = '1.png';
+let imagesLoaded = false;
 
-        // Calcular dimensiones (optimizar si está habilitado)
-        let targetWidth = img.naturalWidth;
-        let targetHeight = img.naturalHeight;
+// ===== Initialize =====
+async function init() {
+    // Mostrar pantalla de carga inicial
+    showLoading(true, 'Cargando recursos...', true);
 
-        if (IMAGE_OPTIMIZATION.enabled && img.naturalWidth > IMAGE_OPTIMIZATION.maxWidth) {
-            const scale = IMAGE_OPTIMIZATION.maxWidth / img.naturalWidth;
-            targetWidth = IMAGE_OPTIMIZATION.maxWidth;
-            targetHeight = Math.round(img.naturalHeight * scale);
+    try {
+        // Precargar todas las imágenes
+        await preloadAllImages();
+
+        // Event listeners
+        studentNameInput.addEventListener('input', handleNameInput);
+        levelSelect.addEventListener('change', handleLevelChange);
+        downloadBtn.addEventListener('click', generatePDF);
+        resetBtn.addEventListener('click', resetForm);
+
+        // Initial button state
+        updateDownloadButton();
+
+        imagesLoaded = true;
+    } catch (error) {
+        console.error('Error loading images:', error);
+        alert('Error al cargar las imágenes. Por favor recarga la página.');
+    } finally {
+        showLoading(false);
+    }
+}
+
+// ===== Preload All Images =====
+async function preloadAllImages() {
+    const totalImages = DIPLOMA_IMAGES.length;
+    let loadedCount = 0;
+
+    updateProgress(0, totalImages);
+
+    const loadPromises = DIPLOMA_IMAGES.map(async (imageName, index) => {
+        try {
+            const base64 = await loadAndConvertImage(imageName);
+            imageCache[imageName] = base64;
+            loadedCount++;
+            updateProgress(loadedCount, totalImages);
+        } catch (error) {
+            console.error(`Error loading ${imageName}:`, error);
+            throw error;
         }
+    });
 
-        canvas.width = targetWidth;
-        canvas.height = targetHeight;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+    await Promise.all(loadPromises);
+}
 
-        // Usar formato y calidad configurados
-        if (IMAGE_OPTIMIZATION.enabled) {
-            imageBase64 = canvas.toDataURL(IMAGE_OPTIMIZATION.format, IMAGE_OPTIMIZATION.quality);
-        } else {
-            imageBase64 = canvas.toDataURL('image/png');
-        }
-    };
-    img.src = diplomaImage.src;
+// ===== Load and Convert Single Image =====
+function loadAndConvertImage(imageSrc) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = 'Anonymous';
+
+        img.onload = function () {
+            const canvas = document.createElement('canvas');
+
+            // Calcular dimensiones (optimizar si está habilitado)
+            let targetWidth = img.naturalWidth;
+            let targetHeight = img.naturalHeight;
+
+            if (IMAGE_OPTIMIZATION.enabled && img.naturalWidth > IMAGE_OPTIMIZATION.maxWidth) {
+                const scale = IMAGE_OPTIMIZATION.maxWidth / img.naturalWidth;
+                targetWidth = IMAGE_OPTIMIZATION.maxWidth;
+                targetHeight = Math.round(img.naturalHeight * scale);
+            }
+
+            canvas.width = targetWidth;
+            canvas.height = targetHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+
+            // Usar formato y calidad configurados
+            let base64;
+            if (IMAGE_OPTIMIZATION.enabled) {
+                base64 = canvas.toDataURL(IMAGE_OPTIMIZATION.format, IMAGE_OPTIMIZATION.quality);
+            } else {
+                base64 = canvas.toDataURL('image/png');
+            }
+
+            resolve(base64);
+        };
+
+        img.onerror = () => reject(new Error(`Failed to load image: ${imageSrc}`));
+        img.src = imageSrc;
+    });
+}
+
+// ===== Update Progress Bar =====
+function updateProgress(loaded, total) {
+    const percentage = Math.round((loaded / total) * 100);
+    if (loadingProgressBar) {
+        loadingProgressBar.style.width = `${percentage}%`;
+    }
+    if (loadingText) {
+        loadingText.textContent = `Cargando imágenes... ${loaded}/${total}`;
+    }
 }
 
 // ===== Helper Functions =====
@@ -161,9 +223,6 @@ function adjustNameFontSize(name) {
 function handleLevelChange(e) {
     currentLevel = e.target.value;
     diplomaImage.src = currentLevel;
-
-    // Re-convert the new image to base64
-    convertImageToBase64();
 }
 
 function updateDownloadButton() {
@@ -180,7 +239,6 @@ function resetForm() {
     nameOverlay.style.opacity = '0.5';
     nameOverlay.style.fontSize = 'clamp(1.8rem, 4vw, 3rem)';
     diplomaImage.src = '1.png';
-    convertImageToBase64();
     updateDownloadButton();
 
     // Focus on name input
@@ -191,7 +249,7 @@ function resetForm() {
 async function generatePDF() {
     if (!currentName) return;
 
-    showLoading(true);
+    showLoading(true, 'Generando PDF...');
 
     try {
         // Wait a bit for UI update
@@ -199,17 +257,13 @@ async function generatePDF() {
 
         const { jsPDF } = window.jspdf;
 
-        // Get the diploma wrapper dimensions
-        const wrapper = diplomaPreview;
-        const diplomaImg = diplomaImage;
-
         // Create a canvas to draw the final diploma
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
 
-        // Use the original image dimensions
+        // Use the cached base64 image
         const img = new Image();
-        img.src = imageBase64 || diplomaImg.src;
+        img.src = imageCache[currentLevel] || diplomaImage.src;
 
         await new Promise((resolve, reject) => {
             img.onload = resolve;
@@ -334,8 +388,13 @@ async function generatePDF() {
 }
 
 // ===== UI Helpers =====
-function showLoading(show) {
+function showLoading(show, message = 'Generando PDF...', showProgress = false) {
     if (show) {
+        if (loadingText) loadingText.textContent = message;
+        if (loadingProgress) {
+            loadingProgress.style.display = showProgress ? 'block' : 'none';
+            if (loadingProgressBar) loadingProgressBar.style.width = '0%';
+        }
         loadingOverlay.classList.remove('hidden');
     } else {
         loadingOverlay.classList.add('hidden');

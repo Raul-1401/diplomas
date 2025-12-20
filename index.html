@@ -118,7 +118,12 @@
     <div id="loadingOverlay" class="loading-overlay hidden">
         <div class="loading-content">
             <div class="spinner"></div>
-            <p>Generando PDF...</p>
+            <p id="loadingText">Cargando...</p>
+            <div id="loadingProgress" class="loading-progress" style="display: none;">
+                <div class="progress-bar">
+                    <div id="loadingProgressBar" class="progress-fill"></div>
+                </div>
+            </div>
         </div>
     </div>
 
