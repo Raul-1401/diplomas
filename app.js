@@ -93,21 +93,37 @@ function handleNameInput(e) {
 }
 
 function adjustNameFontSize(name) {
-    // Adjust font size based on name length to fit within diploma
-    const length = name.length;
-    let fontSize;
-
-    if (length <= 20) {
-        fontSize = 'clamp(1.8rem, 4vw, 3rem)';
-    } else if (length <= 30) {
-        fontSize = 'clamp(1.5rem, 3.5vw, 2.6rem)';
-    } else if (length <= 40) {
-        fontSize = 'clamp(1.2rem, 3vw, 2.2rem)';
-    } else {
-        fontSize = 'clamp(1rem, 2.5vw, 1.8rem)';
+    if (!name) {
+        nameOverlay.style.fontSize = '2.5rem';
+        return;
     }
 
-    nameOverlay.style.fontSize = fontSize;
+    // Obtener el ancho disponible para el nombre (60% del contenedor del diploma)
+    const diplomaWrapper = document.getElementById('diplomaPreview');
+    const availableWidth = diplomaWrapper.offsetWidth * 0.68; // 68% para dar margen
+
+    // Tamaño máximo y mínimo de fuente en píxeles
+    const maxFontSize = 48;
+    const minFontSize = 16;
+
+    // Crear un canvas temporal para medir el texto
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    let fontSize = maxFontSize;
+
+    // Reducir el tamaño de fuente hasta que el texto quepa
+    while (fontSize > minFontSize) {
+        ctx.font = `${fontSize}px 'Great Vibes', cursive`;
+        const textWidth = ctx.measureText(name).width;
+
+        if (textWidth <= availableWidth) {
+            break;
+        }
+        fontSize -= 1;
+    }
+
+    nameOverlay.style.fontSize = `${fontSize}px`;
 }
 
 function handleLevelChange(e) {
@@ -178,19 +194,22 @@ async function generatePDF() {
         // Draw the name text
         ctx.save();
 
-        // Calculate font size relative to image size (increased for better visibility)
-        const baseFontSize = img.naturalWidth * 0.07;
-        const nameLength = currentName.length;
-        let fontSize;
+        // Calculate font size to fit within fixed width (70% of image width)
+        const availableWidth = img.naturalWidth * 0.68; // 68% para dar margen
+        const maxFontSize = img.naturalWidth * 0.08;
+        const minFontSize = img.naturalWidth * 0.025;
 
-        if (nameLength <= 20) {
-            fontSize = baseFontSize;
-        } else if (nameLength <= 30) {
-            fontSize = baseFontSize * 0.85;
-        } else if (nameLength <= 40) {
-            fontSize = baseFontSize * 0.7;
-        } else {
-            fontSize = baseFontSize * 0.55;
+        let fontSize = maxFontSize;
+
+        // Reducir el tamaño de fuente hasta que el texto quepa
+        while (fontSize > minFontSize) {
+            ctx.font = `${fontSize}px 'Great Vibes', cursive`;
+            const textWidth = ctx.measureText(currentName).width;
+
+            if (textWidth <= availableWidth) {
+                break;
+            }
+            fontSize -= 2;
         }
 
         ctx.font = `${fontSize}px 'Great Vibes', cursive`;

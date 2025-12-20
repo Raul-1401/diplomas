@@ -372,10 +372,12 @@ body {
 .name-text {
     position: absolute;
     top: 60%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+    left: 15%;
+    right: 15%;
+    width: 70%;
+    transform: translateY(-50%);
     font-family: 'Great Vibes', cursive;
-    font-size: clamp(1.5rem, 4vw, 2.8rem);
+    font-size: 2.5rem;
     color: #2c5282;
     text-align: center;
     white-space: nowrap;
@@ -384,6 +386,10 @@ body {
     text-decoration: underline;
     text-underline-offset: 8px;
     text-decoration-thickness: 1px;
+    /* Centrado perfecto con flexbox */
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .level-text {
