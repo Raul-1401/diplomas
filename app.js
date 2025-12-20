@@ -15,7 +15,7 @@ const toast = document.getElementById('toast');
 
 // ===== Configuration =====
 // Proporciones para el tamaño de fuente (relativos al ancho de la imagen)
-const FONT_SIZE_MAX_RATIO = 0.055;  // 5.5% del ancho
+const FONT_SIZE_MAX_RATIO = 0.7;  // 5.5% del ancho
 const FONT_SIZE_MIN_RATIO = 0.018; // 1.8% del ancho
 const AVAILABLE_WIDTH_RATIO = 0.68; // 68% del ancho para el nombre
 
