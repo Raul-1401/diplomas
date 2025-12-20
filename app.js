@@ -30,17 +30,48 @@ function init() {
     updateDownloadButton();
 }
 
+// ===== Configuration =====
+// Proporciones para el tamaño de fuente (relativos al ancho de la imagen)
+const FONT_SIZE_MAX_RATIO = 0.06;  // 6% del ancho
+const FONT_SIZE_MIN_RATIO = 0.018; // 1.8% del ancho
+const AVAILABLE_WIDTH_RATIO = 0.68; // 68% del ancho para el nombre
+
+// Configuración de optimización de imagen
+const IMAGE_OPTIMIZATION = {
+    enabled: true,       // Activar/desactivar optimización
+    maxWidth: 2500,      // Ancho máximo en píxeles (original: 6250)
+    quality: 0.85,       // Calidad JPEG (0.0 a 1.0)
+    format: 'image/jpeg' // Formato: 'image/jpeg' para menor tamaño, 'image/png' para calidad máxima
+};
+
 // ===== Convert image to base64 =====
 function convertImageToBase64() {
     const img = new Image();
     img.crossOrigin = 'Anonymous';
     img.onload = function () {
         const canvas = document.createElement('canvas');
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
+
+        // Calcular dimensiones (optimizar si está habilitado)
+        let targetWidth = img.naturalWidth;
+        let targetHeight = img.naturalHeight;
+
+        if (IMAGE_OPTIMIZATION.enabled && img.naturalWidth > IMAGE_OPTIMIZATION.maxWidth) {
+            const scale = IMAGE_OPTIMIZATION.maxWidth / img.naturalWidth;
+            targetWidth = IMAGE_OPTIMIZATION.maxWidth;
+            targetHeight = Math.round(img.naturalHeight * scale);
+        }
+
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
         const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-        imageBase64 = canvas.toDataURL('image/png');
+        ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+
+        // Usar formato y calidad configurados
+        if (IMAGE_OPTIMIZATION.enabled) {
+            imageBase64 = canvas.toDataURL(IMAGE_OPTIMIZATION.format, IMAGE_OPTIMIZATION.quality);
+        } else {
+            imageBase64 = canvas.toDataURL('image/png');
+        }
     };
     img.src = diplomaImage.src;
 }
@@ -98,13 +129,14 @@ function adjustNameFontSize(name) {
         return;
     }
 
-    // Obtener el ancho disponible para el nombre (60% del contenedor del diploma)
+    // Obtener el ancho del contenedor del diploma para calcular proporciones
     const diplomaWrapper = document.getElementById('diplomaPreview');
-    const availableWidth = diplomaWrapper.offsetWidth * 0.68; // 68% para dar margen
+    const wrapperWidth = diplomaWrapper.offsetWidth;
+    const availableWidth = wrapperWidth * AVAILABLE_WIDTH_RATIO;
 
-    // Tamaño máximo y mínimo de fuente en píxeles
-    const maxFontSize = 48;
-    const minFontSize = 16;
+    // Tamaño máximo y mínimo de fuente proporcionales al contenedor
+    const maxFontSize = wrapperWidth * FONT_SIZE_MAX_RATIO;
+    const minFontSize = wrapperWidth * FONT_SIZE_MIN_RATIO;
 
     // Crear un canvas temporal para medir el texto
     const canvas = document.createElement('canvas');
@@ -194,10 +226,10 @@ async function generatePDF() {
         // Draw the name text
         ctx.save();
 
-        // Calculate font size to fit within fixed width (70% of image width)
-        const availableWidth = img.naturalWidth * 0.68; // 68% para dar margen
-        const maxFontSize = img.naturalWidth * 0.08;
-        const minFontSize = img.naturalWidth * 0.025;
+        // Calculate font size usando las mismas proporciones que la previsualización
+        const availableWidth = canvas.width * AVAILABLE_WIDTH_RATIO;
+        const maxFontSize = canvas.width * FONT_SIZE_MAX_RATIO;
+        const minFontSize = canvas.width * FONT_SIZE_MIN_RATIO;
 
         let fontSize = maxFontSize;
 
@@ -209,7 +241,7 @@ async function generatePDF() {
             if (textWidth <= availableWidth) {
                 break;
             }
-            fontSize -= 2;
+            fontSize -= 1;
         }
 
         ctx.font = `${fontSize}px 'Great Vibes', cursive`;
